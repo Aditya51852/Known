@@ -35,6 +35,13 @@ const Signup = () => {
       leftTitle: 'Connect as Mentor',
       leftSubtitle: 'Guiding minds to reach their potential',
       bgColor: 'from-purple-400 to-pink-500'
+    },
+    service: {
+      title: 'Join as Service Provider',
+      subtitle: 'Create your account to get started',
+      leftTitle: 'Connect as Service Provider',
+      leftSubtitle: 'Offer home test-drives and earn per service',
+      bgColor: 'from-cyan-400 to-sky-500'
     }
   };
 
@@ -62,9 +69,14 @@ const Signup = () => {
       
       // Dummy signup logic (replace with actual API call)
       if (email && password && name) {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('role', role);
+        window.dispatchEvent(new Event('auth-changed'));
         // Navigate based on role
         if (role === 'mentor') {
           navigate("/mentor-profile");
+        } else if (role === 'service') {
+          navigate("/service-dashboard");
         } else {
           navigate("/profile");
         }
@@ -79,7 +91,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex pt-24">
       {/* Left Side - Role-specific content */}
       <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentRole.bgColor} flex-col justify-center items-center p-12 text-white relative`}>
         <div className="absolute top-8 left-8">

@@ -33,7 +33,7 @@ const MentorProfile = () => {
   };
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50 flex flex-col md:flex-row gap-10">
+    <div className="min-h-screen p-8 pt-24 bg-gray-50 flex flex-col md:flex-row gap-10">
       <div className="w-full md:w-1/3 flex justify-center items-start">
         <img
           src={mentor.pic}

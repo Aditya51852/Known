@@ -1,11 +1,28 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export function Header() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    typeof window !== 'undefined' ? localStorage.getItem('isAuthenticated') === 'true' : false
+  );
   const [isInterestOpen, setIsInterestOpen] = useState(false);
   const [isFeelOpen, setIsFeelOpen] = useState(false);
   const interestRef = useRef<HTMLDivElement>(null);
-  const feelRef = useRef<HTMLDivElement>(null);
+  const feelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const onStorage = () => {
+      setIsAuthenticated(localStorage.getItem('isAuthenticated') === 'true');
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('auth-changed', onStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('auth-changed', onStorage as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: PointerEvent) {
@@ -22,130 +39,92 @@ export function Header() {
         setIsFeelOpen(false);
       }
     }
-
-    document.addEventListener("pointerdown", handleClickOutside);
-    return () => {
-      document.removeEventListener("pointerdown", handleClickOutside);
-    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
+  const navLink = (to: string, label: string) => {
+    const isActive = location.pathname === to;
+    return (
+      <Link
+        to={to}
+        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          isActive ? 'text-blue-700 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    navigate('/login');
+    setIsAuthenticated(false);
+    window.dispatchEvent(new Event('auth-changed'));
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            {/* Logo */}
-            <span
-              className="text-2xl font-extrabold text-blue-700 tracking-tight select-none"
-              style={{ letterSpacing: "0.1em" }}
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-3">
+        <div className="grid grid-cols-3 items-center w-full">
+          {/* Brand */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+              K
+            </div>
+            <div className="leading-tight">
+              <div className="text-base md:text-lg font-extrabold tracking-tight text-gray-900 group-hover:text-blue-700 transition-colors">
+                KNOWN
+              </div>
+              <div className="hidden md:block text-[10px] text-gray-500 -mt-0.5">Car Journey Platform</div>
+            </div>
+          </Link>
+
+          {/* Left controls: Interest dropdown (hidden to simplify header) */}
+          <div className="hidden" aria-hidden ref={interestRef}></div>
+
+          {/* Center: Navigation */}
+          <nav className="hidden md:flex items-center justify-center gap-2">
+            {navLink('/', 'Home')}
+            {navLink('/bargein', 'Bargain Arena')}
+          </nav>
+
+          {/* Right: actions */}
+          <div className="flex items-center justify-end gap-3">
+            {/* Settings icon placeholder to match design */}
+            <button
+              className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+              aria-label="Settings"
+              ref={feelRef}
             >
-              KNOWN
-            </span>
-
-            {/* Interest Dropdown */}
-            <div className="relative" ref={interestRef}>
-              <button
-                onClick={() => setIsInterestOpen((prev) => !prev)}
-                className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-200 flex items-center space-x-2 hover:bg-gray-50 transition-colors duration-150"
-              >
-                <span>Interest</span>
-                <svg
-                  className={`w-4 h-4 transition-transform ${
-                    isInterestOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-              {isInterestOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 py-2 z-50 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  <a
-                    className="block px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    Buy Used Cars
-                  </a>
-                  <a
-                    href="#sell"
-                    className="block px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    Sell
-                  </a>
-                  <a
-                    href="#best-review"
-                    className="block px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    Best Review
-                  </a>
-                  <a
-                    href="#news"
-                    className="block px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    News
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-4">
-            {/* Feel Dropdown */}
-            <div className="relative" ref={feelRef}>
-              <button
-                onClick={() => setIsFeelOpen((prev) => !prev)}
-                className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-200 flex items-center space-x-2 hover:bg-gray-50 transition-colors duration-150"
-              >
-                <span>Feel</span>
-                <svg
-                  className={`w-12 h-4 transition-transform ${
-                    isFeelOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-              {isFeelOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 py-2 z-50 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  <div className="block px-4 py-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                    Performance
-                  </div>
-                  <div className="block px-4 py-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                    Luxury
-                  </div>
-                  <div className="block px-4 py-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                    Off-Roading
-                  </div>
-                  <div className="block px-4 py-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                    Daily Drive
-                  </div>
-                  <div className="block px-4 py-2 text-gray-700 hover:text-blue-600 cursor-pointer">
-                    Electric
-                  </div>
-                </div>
-              )}
-            </div>
-
-           <Link to="/auth">
-            <button className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors" >
-              Login/Signup
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35.52-.126.95-.47 1.066-.99.94-1.543 3.707-.777 2.37-2.37A1.724 1.724 0 007.752 5.383 1.724 1.724 0 0010.325 4.317z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
             </button>
-            </Link>
+
+            {isAuthenticated && (
+              <Link to="/profile" className="hidden md:inline-flex px-3 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm hover:bg-gray-50">
+                Profile
+              </Link>
+            )}
+
+            {!isAuthenticated ? (
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800"
+              >
+                Login
+              </Link>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </div>

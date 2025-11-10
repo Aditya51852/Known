@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export const AuthLanding: React.FC = () => {
-  const [selectedRole, setSelectedRole] = useState<'client' | 'dealer' | 'mentor' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'client' | 'dealer' | 'mentor' | 'service' | null>(null);
 
   const roles = [
     {
@@ -25,11 +25,18 @@ export const AuthLanding: React.FC = () => {
       description: 'Share your expertise and earn money',
       icon: '👨‍🏫',
       features: ['Offer expert advice', 'Flexible scheduling', 'Earn ₹200-2200', 'Build reputation']
+    },
+    {
+      type: 'service' as const,
+      title: 'Service Provider',
+      description: 'Provide test drive services and earn',
+      icon: '🚗',
+      features: ['Offer test drive services', 'Flexible timing', 'Earn ₹450 per service', 'Build trust points']
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-24 pb-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-28 pb-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -42,7 +49,7 @@ export const AuthLanding: React.FC = () => {
         </div>
 
         {/* Role Selection */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {roles.map((role) => (
             <div
               key={role.type}

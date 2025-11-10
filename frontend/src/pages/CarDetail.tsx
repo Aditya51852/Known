@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { carsApi, testDriveApi } from '../services/api';
 
 interface CarImage {
   id: string;
@@ -55,6 +56,12 @@ interface CarData {
   reviews: Review[];
   averageRating: number;
   totalReviews: number;
+  modelYear?: number;
+  description?: string;
+  seating?: number;
+  efficiency?: string;
+  transmission?: string;
+  availableColors?: string[];
 }
 
 // Mock data - replace with actual API call
@@ -65,6 +72,13 @@ const mockCarData: CarData = {
   fuelType: 'Petrol',
   bodyType: 'Coupe',
   engineType: 'Inline-6',
+  modelYear: 2024,
+  description:
+    'The Toyota GR Supra blends a legendary nameplate with modern performance. With its turbocharged inline-6, precise handling, and premium interior, it delivers an engaging drive and everyday usability.',
+  seating: 2,
+  efficiency: '12.8 km/l',
+  transmission: '8-Speed Automatic',
+  availableColors: ['Super White', 'Nitro Yellow', 'Renaissance Red', 'Nocturnal Black', 'Turbulence Grey'],
   images: [
     { id: '1', url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop', type: 'exterior', alt: 'Toyota Supra exterior front' },
     { id: '2', url: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop', type: 'exterior', alt: 'Toyota Supra exterior side' },
@@ -178,12 +192,13 @@ export const CarDetail: React.FC = () => {
   
   // State management
   const [carData, setCarData] = useState<CarData | null>(null);
-  const [selectedExteriorImage, setSelectedExteriorImage] = useState(0);
-  const [selectedInteriorImage, setSelectedInteriorImage] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState('1');
   const [selectedLocation, setSelectedLocation] = useState('1');
   const [activeTab, setActiveTab] = useState('engine');
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+  const [showBooking, setShowBooking] = useState(false);
   
   // EMI Calculator state
   const [loanAmount, setLoanAmount] = useState(4000000);
@@ -191,16 +206,57 @@ export const CarDetail: React.FC = () => {
   const [interestRate, setInterestRate] = useState(8.5);
 
   useEffect(() => {
-    // Simulate API call
-    setCarData(mockCarData);
+    const fetchCarData = async () => {
+      try {
+        if (!carId) return;
+        const car = await carsApi.getById(carId);
+        
+        // Transform backend data to match frontend interface
+        const transformedCar: CarData = {
+          id: car._id,
+          name: `${car.brand} ${car.model}`,
+          brand: car.brand,
+          fuelType: car.fuelType,
+          bodyType: car.bodyType,
+          engineType: car.details?.engine?.['Engine Type'] || 'N/A',
+          images: car.images || [],
+          engineOptions: [{
+            id: '1',
+            title: car.details?.engine?.['Engine Type'] || 'Engine',
+            acceleration: '0-100 km/h',
+            topSpeed: car.details?.engine?.['Top Speed'] || 'N/A',
+            gearType: car.transmission || 'Automatic',
+            gears: 6
+          }],
+          variants: car.variants || [],
+          details: car.details || {},
+          reviews: [],
+          averageRating: 4.5,
+          totalReviews: 0,
+          modelYear: new Date().getFullYear(),
+          description: car.description || '',
+          seating: car.seating || 5,
+          efficiency: car.details?.engine?.['Efficiency'] || 'N/A',
+          transmission: car.transmission || 'Automatic',
+          availableColors: ['White', 'Black', 'Silver', 'Red', 'Blue']
+        };
+        
+        setCarData(transformedCar);
+      } catch (error) {
+        console.error('Error fetching car:', error);
+        // Fallback to mock data if API fails
+        setCarData(mockCarData);
+      }
+    };
+    
+    fetchCarData();
   }, [carId]);
 
   if (!carData) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  const exteriorImages = carData.images.filter(img => img.type === 'exterior');
-  const interiorImages = carData.images.filter(img => img.type === 'interior');
+  const allImages = carData.images;
   const selectedLocationData = locations.find(loc => loc.id === selectedLocation);
   const selectedVariantData = carData.variants.find(v => v.id === selectedVariant);
   
@@ -232,399 +288,450 @@ export const CarDetail: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] pt-20">
-      {/* Top Section - Image Display (50-50 Split) */}
-      <section className="bg-white py-8">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Exterior Images */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Exterior</h3>
-              <div className="relative">
-                <img 
-                  src={exteriorImages[selectedExteriorImage]?.url} 
-                  alt={exteriorImages[selectedExteriorImage]?.alt}
-                  className="w-full h-80 object-cover rounded-lg"
-                />
-                <button 
-                  onClick={() => setSelectedExteriorImage(prev => prev > 0 ? prev - 1 : exteriorImages.length - 1)}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={() => setSelectedExteriorImage(prev => prev < exteriorImages.length - 1 ? prev + 1 : 0)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex gap-2 mt-4 overflow-x-auto">
-                {exteriorImages.map((image, index) => (
-                  <img
-                    key={image.id}
-                    src={image.url}
-                    alt={image.alt}
-                    className={`w-20 h-16 object-cover rounded cursor-pointer flex-shrink-0 ${
-                      selectedExteriorImage === index ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => setSelectedExteriorImage(index)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Interior Images */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Interior</h3>
-              <div className="relative">
-                <img 
-                  src={interiorImages[selectedInteriorImage]?.url} 
-                  alt={interiorImages[selectedInteriorImage]?.alt}
-                  className="w-full h-80 object-cover rounded-lg"
-                />
-                <button 
-                  onClick={() => setSelectedInteriorImage(prev => prev > 0 ? prev - 1 : interiorImages.length - 1)}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={() => setSelectedInteriorImage(prev => prev < interiorImages.length - 1 ? prev + 1 : 0)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex gap-2 mt-4 overflow-x-auto">
-                {interiorImages.map((image, index) => (
-                  <img
-                    key={image.id}
-                    src={image.url}
-                    alt={image.alt}
-                    className={`w-20 h-16 object-cover rounded cursor-pointer flex-shrink-0 ${
-                      selectedInteriorImage === index ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => setSelectedInteriorImage(index)}
-                  />
-                ))}
-              </div>
-            </div>
+    <div className={`${darkMode ? 'dark' : ''}`}>
+      <div className="min-h-screen bg-[#0B0B0C] text-gray-100 dark:bg-[#0B0B0C] dark:text-gray-100 pt-24">
+        {/* Top Toolbar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline text-xs text-gray-400">Theme</span>
+            <button
+              onClick={() => setDarkMode((d) => !d)}
+              className="px-3 py-1.5 rounded-full bg-gray-800/60 hover:bg-gray-700/70 text-xs border border-white/10"
+            >
+              {darkMode ? 'Dark' : 'Light'}
+            </button>
           </div>
         </div>
-      </section>
 
-      {/* Main Content (60-40 Layout) */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* Left Column (60%) */}
-            <div className="lg:col-span-3">
-              {/* Car Title Section */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">{carData.name}</h1>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    {carData.brand}
-                  </span>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                    {carData.fuelType}
-                  </span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                    {carData.bodyType}
-                  </span>
-                  <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
-                    {carData.engineType}
-                  </span>
+        {/* Hero + Right Details */}
+        <section className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Hero + Thumbs */}
+              <div className="w-full">
+                <div className="relative group overflow-hidden rounded-xl bg-black/40">
+                  <img
+                    src={allImages[selectedImage]?.url}
+                    alt={allImages[selectedImage]?.alt}
+                    className="w-full aspect-[16/10] object-cover transition duration-300 group-hover:scale-[1.02]"
+                  />
+                  {/* Nav arrows */}
+                  <button
+                    aria-label="Prev image"
+                    onClick={() => setSelectedImage((p) => (p > 0 ? p - 1 : allImages.length - 1))}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur border border-white/10"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    aria-label="Next image"
+                    onClick={() => setSelectedImage((p) => (p < allImages.length - 1 ? p + 1 : 0))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur border border-white/10"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                  {allImages.map((img, i) => (
+                    <button
+                      key={img.id}
+                      onClick={() => setSelectedImage(i)}
+                      className={`relative flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border ${
+                        selectedImage === i ? 'border-orange-500' : 'border-white/10'
+                      }`}
+                    >
+                      <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+                      {img.type === 'interior' && (
+                        <span className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">
+                          Interior
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Engine Options */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Engine Options</h2>
-                {carData.engineOptions.map((engine) => (
-                  <div key={engine.id} className="border rounded-lg p-4">
-                    <h3 className="font-semibold text-lg mb-3">{engine.title}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <span className="text-sm text-gray-600">0-100 km/h</span>
-                        <p className="font-semibold">{engine.acceleration}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Top Speed</span>
-                        <p className="font-semibold">{engine.topSpeed}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Transmission</span>
-                        <p className="font-semibold">{engine.gearType}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Gears</span>
-                        <p className="font-semibold">{engine.gears}</p>
+              {/* Right: Details panel */}
+              <div className="space-y-5">
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5 shadow-xl">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                        {carData.name}
+                      </h1>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {carData.modelYear && (
+                          <span className="px-3 py-1 rounded-full text-xs bg-white/10 text-gray-200">
+                            {carData.modelYear}
+                          </span>
+                        )}
+                        <span className="px-3 py-1 rounded-full text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20">
+                          {carData.brand}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-green-500/15 text-green-300 border border-green-500/20">
+                          {carData.fuelType}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-purple-500/15 text-purple-300 border border-purple-500/20">
+                          {carData.bodyType}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-orange-500/15 text-orange-300 border border-orange-500/20">
+                          {carData.engineType}
+                        </span>
                       </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        setIsBookmarked((s) => {
+                          const next = !s;
+                          try {
+                            const favs = JSON.parse(localStorage.getItem('favourites') || '[]');
+                            const item = { id: carData.id, name: carData.name, brand: carData.brand };
+                            const exists = favs.some((f: any) => f.id === item.id);
+                            let updated = favs;
+                            if (next && !exists) {
+                              updated = [...favs, item];
+                            } else if (!next && exists) {
+                              updated = favs.filter((f: any) => f.id !== item.id);
+                            }
+                            localStorage.setItem('favourites', JSON.stringify(updated));
+                          } catch {}
+                          return next;
+                        });
+                      }}
+                      className={`p-2 rounded-lg border transition ${
+                        isBookmarked
+                          ? 'bg-red-500/10 text-red-300 border-red-500/20'
+                          : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'
+                      }`}
+                      aria-label="Save"
+                    >
+                      <svg className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
                   </div>
-                ))}
-              </div>
 
-              {/* Model Selection */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Model Selection</h2>
-                <select 
-                  value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                >
-                  {carData.variants.map((variant) => (
-                    <option key={variant.id} value={variant.id}>
-                      {variant.name} - {formatPrice(variant.basePrice)}
-                    </option>
-                  ))}
-                </select>
-                {selectedVariantData && (
                   <div className="mt-4">
-                    <h4 className="font-medium mb-2">Features:</h4>
+                    <div className="text-xs uppercase text-gray-400">Ex-showroom from</div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-orange-400 tracking-tight">
+                      {formatPrice(exShowroomPrice)}
+                    </div>
+                  </div>
+
+                  {carData.description && (
+                    <p className="mt-4 text-sm leading-relaxed text-gray-300">
+                      {carData.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Specs cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Fuel', value: carData.fuelType, icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2z"/></svg>
+                    ) },
+                    { label: 'Transmission', value: carData.transmission || 'Automatic', icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-3-9h6m-6 6h6"/></svg>
+                    ) },
+                    { label: 'Seating', value: `${carData.seating || 2} Seater`, icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M7 12V7a3 3 0 016 0v5"/></svg>
+                    ) },
+                    { label: 'Efficiency', value: carData.efficiency || '—', icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    ) },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl bg-white/5 border border-white/10 p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-300">{s.icon}</div>
+                      <div>
+                        <div className="text-xs text-gray-400">{s.label}</div>
+                        <div className="text-sm font-medium">{s.value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Colors */}
+                {carData.availableColors && (
+                  <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                    <div className="text-sm font-semibold mb-3">Available Colors</div>
                     <div className="flex flex-wrap gap-2">
-                      {selectedVariantData.features.map((feature, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
-                          {feature}
-                        </span>
+                      {carData.availableColors.map((c) => (
+                        <button
+                          key={c}
+                          className="px-3 py-1.5 text-xs rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200"
+                        >
+                          {c}
+                        </button>
                       ))}
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Car Details (Departmental Tabs) */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Car Details</h2>
-                <div className="flex flex-wrap gap-2 mb-6 border-b">
-                  {departmentTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <span className="mr-2">{tab.icon}</span>
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(departmentTabs.find(tab => tab.id === activeTab)?.data || {}).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-600">{key}</span>
-                      <span className="font-medium">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column (40%) */}
-            <div className="lg:col-span-2">
-              {/* User Input Controls */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Configuration</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Location
-                    </label>
-                    <select 
-                      value={selectedLocation}
-                      onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                    >
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Price Display */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Pricing</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ex-showroom Price</span>
-                    <span className="font-semibold text-lg">{formatPrice(exShowroomPrice)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">On-road Price ({selectedLocationData?.name})</span>
-                    <span className="font-bold text-xl text-blue-600">{formatPrice(onRoadPrice)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reviews Section */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Reviews</h2>
-                <div className="flex items-center mb-4">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="ml-1 font-semibold text-lg">{carData.averageRating}</span>
-                  </div>
-                  <span className="ml-2 text-gray-600">({carData.totalReviews} reviews)</span>
-                </div>
-                <div className="space-y-4">
-                  {carData.reviews.slice(0, 2).map((review) => (
-                    <div key={review.id} className="border-b border-gray-100 pb-4">
-                      <div className="flex items-center mb-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <svg 
-                              key={i} 
-                              className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm text-gray-600">by {review.reviewer}</span>
-                      </div>
-                      <div className="text-sm">
-                        <div className="mb-1">
-                          <span className="font-medium text-green-600">Pros: </span>
-                          {review.pros.join(', ')}
-                        </div>
-                        <div>
-                          <span className="font-medium text-red-600">Cons: </span>
-                          {review.cons.join(', ')}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* EMI Calculator */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  EMI Calculator
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Loan Amount: {formatPrice(loanAmount)}
-                    </label>
-                    <input
-                      type="range"
-                      min={1000000}
-                      max={onRoadPrice}
-                      value={loanAmount}
-                      onChange={(e) => setLoanAmount(Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tenure: {tenure} years
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={7}
-                      value={tenure}
-                      onChange={(e) => setTenure(Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Interest Rate: {interestRate}%
-                    </label>
-                    <input
-                      type="range"
-                      min={6}
-                      max={15}
-                      step={0.1}
-                      value={interestRate}
-                      onChange={(e) => setInterestRate(Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span>Monthly EMI</span>
-                      <span className="font-bold text-blue-600">{formatPrice(emi)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Total Payable</span>
-                      <span className="font-bold">{formatPrice(totalPayable)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="bg-white rounded-lg p-6">
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Actions */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <button
-                    onClick={() => setIsBookmarked(!isBookmarked)}
-                    className={`flex items-center justify-center px-4 py-2 rounded-lg border transition-colors ${
-                      isBookmarked 
-                        ? 'bg-red-50 border-red-200 text-red-600' 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    }`}
+                    onClick={async () => {
+                      try {
+                        if (carData?.id) {
+                          await testDriveApi.addToCart(carData.id);
+                          setShowBooking(true);
+                        }
+                      } catch (error) {
+                        console.error('Error adding to test drive cart:', error);
+                        alert('Failed to add car to test drive. Please try again.');
+                      }
+                    }}
+                    className="col-span-2 sm:col-span-3 w-full bg-orange-600 text-white py-3 rounded-xl font-semibold hover:bg-orange-700 transition shadow-lg shadow-orange-900/20"
                   >
-                    <svg className={`w-4 h-4 mr-2 ${isBookmarked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    {isBookmarked ? 'Saved' : 'Save'}
+                    Select Car for Test Drive
                   </button>
-                  <button className="flex items-center justify-center px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                    Share
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <button className="flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Compare
-                  </button>
-                  <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                    <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Book Test Drive
-                  </button>
+                  <a
+                    href={`/bargein/select-car?brand=${encodeURIComponent(carData.brand)}&model=${encodeURIComponent(carData.name)}`}
+                    className="w-full text-center px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white border border-white/10"
+                  >
+                    Enter Bargein Arena
+                  </a>
+                  <a
+                    href="tel:+911234567890"
+                    className="w-full text-center px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10"
+                  >
+                    Call Dealer
+                  </a>
+                  <a
+                    href={`https://wa.me/911234567890?text=I%20am%20interested%20in%20${encodeURIComponent(carData.name)}`}
+                    target="_blank" rel="noreferrer"
+                    className="w-full text-center px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10"
+                  >
+                    WhatsApp
+                  </a>
+                  <button className="w-full px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10">Share</button>
+                  <button className="w-full px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10">Compare</button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Tabs + Config + Pricing + Reviews */}
+        <section className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {/* Left - Tabs */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Engine Options quick specs */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <h2 className="text-lg font-semibold mb-4">Engine Options</h2>
+                  <div className="space-y-4">
+                    {carData.engineOptions.map((engine) => (
+                      <div key={engine.id} className="rounded-xl bg-white/5 border border-white/10 p-4">
+                        <h3 className="font-semibold mb-3">{engine.title}</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-400">0-100 km/h</div>
+                            <div className="font-medium">{engine.acceleration}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400">Top Speed</div>
+                            <div className="font-medium">{engine.topSpeed}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400">Transmission</div>
+                            <div className="font-medium">{engine.gearType}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400">Gears</div>
+                            <div className="font-medium">{engine.gears}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <div className="flex flex-wrap gap-2 border-b border-white/10 pb-2 mb-4">
+                    {departmentTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                          activeTab === tab.id
+                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                            : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="mr-1">{tab.icon}</span>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {Object.entries(departmentTabs.find(t => t.id === activeTab)?.data || {}).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm">
+                        <span className="text-gray-400">{k}</span>
+                        <span className="font-medium">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right - Config, Pricing, Reviews */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Configuration */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <h2 className="text-lg font-semibold mb-4">Configuration</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Location</label>
+                      <select
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className="w-full p-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none"
+                      >
+                        {locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Variant</label>
+                      <select
+                        value={selectedVariant}
+                        onChange={(e) => setSelectedVariant(e.target.value)}
+                        className="w-full p-3 rounded-lg bg-black/20 border border-white/10 focus:outline-none"
+                      >
+                        {carData.variants.map((variant) => (
+                          <option key={variant.id} value={variant.id}>
+                            {variant.name} - {formatPrice(variant.basePrice)}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedVariantData && (
+                        <div className="mt-3">
+                          <div className="text-xs text-gray-400 mb-1">Key Features</div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedVariantData.features.map((f, i) => (
+                              <span key={i} className="px-2 py-1 rounded bg-white/5 border border-white/10 text-xs">
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <h2 className="text-lg font-semibold mb-4">Pricing</h2>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Ex-showroom Price</span>
+                      <span className="font-semibold">{formatPrice(exShowroomPrice)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">On-road Price ({selectedLocationData?.name})</span>
+                      <span className="font-bold text-orange-400 text-lg">{formatPrice(onRoadPrice)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* EMI Calculator */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <h2 className="text-lg font-semibold mb-4">EMI Calculator</h2>
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <div className="mb-1 flex justify-between"><span className="text-gray-400">Loan Amount</span><span className="font-medium">{formatPrice(loanAmount)}</span></div>
+                      <input type="range" min={1000000} max={Math.max(onRoadPrice, 1000000)} value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <div className="mb-1 flex justify-between"><span className="text-gray-400">Tenure</span><span className="font-medium">{tenure} years</span></div>
+                      <input type="range" min={1} max={7} value={tenure} onChange={(e) => setTenure(Number(e.target.value))} className="w-full" />
+                    </div>
+                    <div>
+                      <div className="mb-1 flex justify-between"><span className="text-gray-400">Interest Rate</span><span className="font-medium">{interestRate}%</span></div>
+                      <input type="range" min={6} max={15} step={0.1} value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} className="w-full" />
+                    </div>
+                    <div className="rounded-lg bg-black/30 border border-white/10 p-4">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-400">Monthly EMI</span>
+                        <span className="font-bold text-orange-400">{formatPrice(emi)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Total Payable</span>
+                        <span className="font-bold">{formatPrice(totalPayable)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reviews */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    <span className="font-semibold">{carData.averageRating}</span>
+                    <span className="text-gray-400">({carData.totalReviews} reviews)</span>
+                  </div>
+                  <div className="space-y-4">
+                    {carData.reviews.slice(0, 3).map((review) => (
+                      <div key={review.id} className="border-b border-white/10 pb-4">
+                        <div className="flex items-center mb-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-600'}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                            ))}
+                          </div>
+                          <span className="ml-2 text-xs text-gray-400">by {review.reviewer}</span>
+                        </div>
+                        <div className="text-sm">
+                          <div className="mb-1"><span className="font-medium text-green-400">Pros: </span>{review.pros.join(', ')}</div>
+                          <div><span className="font-medium text-red-400">Cons: </span>{review.cons.join(', ')}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Booking Modal */}
+        {showBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-[#0F0F10] border border-white/10 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Book Test Drive</h3>
+                <button onClick={() => setShowBooking(false)} className="text-gray-400 hover:text-white">✕</button>
+              </div>
+              <p className="text-sm text-gray-300 mb-4">We have added {carData.name} to your test drive list. Proceed to your profile to schedule, or continue browsing.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => setShowBooking(false)} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10">Continue</button>
+                <button onClick={() => { setShowBooking(false); window.location.href = '/profile#testdrive'; }} className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white">Go to Schedule</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

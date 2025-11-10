@@ -1,270 +1,222 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+ import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { authApi } from '../services/api';
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const role = searchParams.get('role') || 'client';
+  // New Figma-aligned implementation
+  // Kept self-contained and minimal dependencies
+  // Adds: random hero image, Google sign-in, phone OTP modal
 
-  const roleContent = {
-    client: {
-      title: 'Sign In',
-      subtitle: 'Access your client dashboard',
-      leftTitle: 'Welcome Back',
-      leftSubtitle: 'Find your perfect car with expert guidance',
-      bgColor: 'from-blue-400 to-blue-600'
-    },
-    dealer: {
-      title: 'Sign In', 
-      subtitle: 'Access your dealer dashboard',
-      leftTitle: 'Connect as Dealer',
-      leftSubtitle: 'Empowering dealers to reach more customers',
-      bgColor: 'from-green-400 to-teal-500'
-    },
-    mentor: {
-      title: 'Sign In',
-      subtitle: 'Access your mentor portal', 
-      leftTitle: 'Connect as Mentor',
-      leftSubtitle: 'Guiding minds to reach their potential',
-      bgColor: 'from-purple-400 to-pink-500'
+  const images = [
+    "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop",
+  ];
+
+  const navigate = useNavigate();
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [showOtp, setShowOtp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const heroImage = useMemo(() => images[Math.floor(Math.random() * images.length)], []);
+
+  useEffect(() => {
+    if (showOtp) {
+      const el = document.getElementById("otp-0") as HTMLInputElement | null;
+      el?.focus();
+    }
+  }, [showOtp]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      // In production, pass idToken from Google SDK.
+      // Dev mode: backend accepts email + googleId when GOOGLE_OAUTH_DEV=true
+      const devPayload = {
+        email: `user${Math.floor(Math.random()*100000)}@example.com`,
+        googleId: `dev-${Date.now()}`,
+        name: undefined as unknown as string,
+      };
+      const result = await authApi.googleSignIn(devPayload);
+      window.dispatchEvent(new Event('auth-changed'));
+      if (result.user?.profileComplete) {
+        navigate("/profile");
+      } else {
+        navigate("/profile-setup");
+      }
+    } catch (e: any) {
+      setError(e.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const currentRole = roleContent[role as keyof typeof roleContent] || roleContent.client;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
+  const handleContinueWithMobile = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Dummy login logic (replace with actual API call)
-      if (email && password.length >= 6) {
-        // Navigate based on role
-        if (role === 'mentor') {
-          navigate("/mentor-profile");
-        } else {
-          navigate("/profile");
-        }
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err) {
-      setError("Login failed. Please try again.");
+      setError("");
+      if (mobileNumber.trim().length !== 10) return;
+      setLoading(true);
+      await authApi.sendOtp(mobileNumber);
+      setShowOtp(true);
+    } catch (e: any) {
+      setError(e.message || 'Failed to send OTP');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!isOtpComplete) return;
+    setShowOtp(false);
+    try {
+      setLoading(true);
+      const code = otp.join("");
+      const result = await authApi.verifyOtp(mobileNumber, code);
+      window.dispatchEvent(new Event('auth-changed'));
+      if (result.user?.profileComplete) {
+        navigate("/profile");
+      } else {
+        navigate("/profile-setup");
+      }
+    } catch (e: any) {
+      setError(e.message || 'Invalid OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isOtpComplete = otp.every((d: string) => d.length === 1);
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return;
+    const next = [...otp];
+    next[index] = value;
+    setOtp(next);
+    if (value && index < 3) {
+      const el = document.getElementById(`otp-${index + 1}`) as HTMLInputElement | null;
+      el?.focus();
     }
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Role-specific content */}
-      <div className={`hidden lg:flex lg:w-1/2 bg-gradient-to-br ${currentRole.bgColor} flex-col justify-center items-center p-12 text-white relative`}>
-        <div className="absolute top-8 left-8">
-          <Link 
-            to="/auth" 
-            className="text-white/80 hover:text-white text-sm flex items-center transition-colors"
-          >
-            ← Back to Login Options
-          </Link>
-        </div>
-        
-        <div className="text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4">{currentRole.leftTitle}</h1>
-          {role === 'dealer' && (
-            <div className="mb-8">
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
-                <div className="bg-white/30 rounded-lg p-4 mb-4">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">17.6K</div>
-                      <div className="text-xs opacity-80">Total Revenue</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">1.3%</div>
-                      <div className="text-xs opacity-80">Monthly Growth</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">25.2</div>
-                      <div className="text-xs opacity-80">Avg. Deal Size</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="h-20 bg-white/20 rounded-lg flex items-end justify-around p-2">
-                  {[40, 60, 30, 80, 50, 70, 45, 90, 35, 65].map((height, i) => (
-                    <div key={i} className={`bg-white/60 rounded-sm w-2`} style={{height: `${height}%`}}></div>
-                  ))}
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          {/* Left Column */}
+          <div className="flex flex-col items-center text-center gap-6">
+            <h1 className="text-4xl sm:text-5xl font-semibold">Let's connect as a family</h1>
+            <div className="relative w-80 h-64 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+              <img src={heroImage} alt="Handshake" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/10" />
             </div>
-          )}
-          {role === 'mentor' && (
-            <div className="mb-8">
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
-                <img 
-                  src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop" 
-                  alt="Mentor guidance" 
-                  className="rounded-lg w-full h-32 object-cover"
-                />
-              </div>
-            </div>
-          )}
-          <p className="text-lg opacity-90">{currentRole.leftSubtitle}</p>
-        </div>
-      </div>
+            <p className="text-gray-300 text-lg">Building connections, one handshake at a time</p>
+          </div>
 
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-sm p-8">
-            {/* Mobile back button */}
-            <div className="lg:hidden mb-6">
-              <Link 
-                to="/auth" 
-                className="text-gray-600 hover:text-gray-900 text-sm flex items-center transition-colors"
-              >
-                ← Back
-              </Link>
-            </div>
-            
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{currentRole.title}</h1>
-              <p className="text-gray-600">{currentRole.subtitle}</p>
+          {/* Right Column */}
+          <div className="bg-gray-900/50 rounded-2xl p-8 ring-1 ring-white/10 max-w-md w-full mx-auto">
+            <Link to="/" className="inline-flex items-center text-gray-300 hover:text-white text-sm mb-4">
+              <span className="mr-2">←</span> Back to Homepage
+            </Link>
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-semibold">Welcome to Known</h2>
+              <p className="text-gray-400">Login with Google or Mobile OTP</p>
             </div>
 
-            {/* Quick Auth Options */}
-            <div className="space-y-3 mb-6">
-              <button className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Continue with Google
-              </button>
-              
-              <button className="w-full flex items-center justify-center gap-3 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
-                Login with Mobile OTP
-              </button>
-            </div>
-            
+            {/* Quick Client Login */}
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full h-12 flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-transform duration-200 active:scale-[0.99] shadow-[inset_0_-2px_0_rgba(255,255,255,0.1)]"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#fff" opacity=".8" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#fff" opacity=".7" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#fff" opacity=".6" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Continue with Google
+            </button>
+
             {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or continue with email</span>
-              </div>
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-sm text-gray-400">or</span>
+              <div className="flex-1 h-px bg-white/10" />
             </div>
 
+            {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm text-center">{error}</p>
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
+                {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
+            {/* Mobile OTP Login */}
+            <div className="space-y-3">
+              <div className="flex items-stretch rounded-full border border-white/10 bg-gray-800 overflow-hidden">
+                <span className="px-4 py-3 text-gray-200 text-sm select-none border-r border-white/10">+91</span>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                  placeholder="Enter your email"
-                  required
+                  value={mobileNumber}
+                  onChange={(e) => setMobileNumber(e.target.value.replace(/[^\d]/g, '').slice(0, 10))}
+                  type="tel"
+                  placeholder="Mobile Number"
+                  className="flex-1 px-4 py-3 bg-transparent text-white placeholder-gray-400 outline-none"
+                  maxLength={10}
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all pr-12"
-                    placeholder="Enter your password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <Link to="/forgot-password" className="text-sm text-gray-600 hover:text-gray-900">
-                  Forgot Password?
-                </Link>
-              </div>
-
               <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all ${
-                  isLoading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gray-600 hover:bg-gray-700'
+                onClick={handleContinueWithMobile}
+                disabled={loading || mobileNumber.length !== 10}
+                className={`w-full h-12 rounded-full font-medium transition shadow-[inset_0_-2px_0_rgba(255,255,255,0.1)] ${
+                  !loading && mobileNumber.length === 10
+                    ? 'bg-cyan-700 hover:bg-cyan-600 text-white'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
+                {loading ? 'Sending OTP...' : 'Send OTP'}
               </button>
-            </form>
+            </div>
 
             {/* Footer */}
-            <div className="mt-8 text-center">
-              <p className="text-gray-600 text-sm">
-                If not registered
-              </p>
-              <Link 
-                to={`/signup?role=${role}`} 
-                className="inline-block mt-2 px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Signup
-              </Link>
-            </div>
+            <div className="text-center mt-8 text-sm text-gray-400">By continuing, you agree to our Terms & Privacy Policy.</div>
           </div>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      {showOtp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowOtp(false)} />
+          <div className="relative z-10 w-full max-w-md bg-gray-900 rounded-xl p-6 ring-1 ring-white/10">
+            <h3 className="text-lg font-semibold mb-1">Enter OTP</h3>
+            <p className="text-sm text-gray-400 mb-6">We sent a 4-digit code to +91{mobileNumber}</p>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {otp.map((d: string, i: number) => (
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={d}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  className="w-12 h-12 text-center text-lg rounded-lg bg-gray-800 text-white border border-white/10 focus:border-teal-500 outline-none"
+                />
+              ))}
+            </div>
+            <button
+              onClick={handleVerifyOtp}
+              disabled={!isOtpComplete || loading}
+              className={`w-full h-11 rounded-lg font-medium ${isOtpComplete && !loading ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+            >
+              {loading ? 'Verifying...' : 'Verify & Continue'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

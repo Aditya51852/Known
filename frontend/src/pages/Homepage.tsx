@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { SearchBar } from '../components/SearchBar';
-import { FilterOptions } from '../components/FilterOptions';
 import { Banner } from '../components/Banner';
 import { NavigationTabs } from '../components/NavigationTabs';
 import { FindTheMatch } from '../components/FindTheMatch';
@@ -66,24 +65,17 @@ export const Homepage: React.FC = () => {
 
       {/* Main Content */}
       <main className="pt-20">
-        {/* Hero Section with Search and Banner */}
-        <section className="relative px-8 py-12">
-          <div className="max-w-7xl mx-auto">
-            <Banner />
-            
-            {/* Search Bar Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center z-50">
-              <div className="w-full max-w-2xl search-container">
-                <SearchBar 
-                  isExpanded={isSearchExpanded}
-                  onToggleExpanded={handleToggleSearch}
-                />
-                
-                {/* Filter Options */}
-                <div className="relative">
-                  <FilterOptions isVisible={isSearchExpanded} />
-                </div>
-              </div>
+        {/* Hero Section with full-bleed Banner and Search overlay */}
+        <section className="relative pb-12">
+          <Banner />
+
+          {/* Search Bar Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center z-50 px-8">
+            <div className="w-full max-w-2xl search-container">
+              <SearchBar 
+                isExpanded={isSearchExpanded}
+                onToggleExpanded={handleToggleSearch}
+              />
             </div>
           </div>
         </section>
@@ -92,6 +84,19 @@ export const Homepage: React.FC = () => {
         <section className="px-8">
           <div className="max-w-7xl mx-auto">
             <NavigationTabs />
+          </div>
+        </section>
+
+        {/* Bargein Arena CTA */}
+        <section className="px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold text-blue-900 mb-1">Ready to Bargein?</h3>
+                <p className="text-blue-800/80">Enter the Bargein Arena to get competing offers from authorized dealers while keeping your identity private.</p>
+              </div>
+              <a href="/bargein" className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">Enter Bargein Arena</a>
+            </div>
           </div>
         </section>
 
@@ -138,7 +143,7 @@ export const Homepage: React.FC = () => {
         </section>
 
         {/* Browse by Brand Section */}
-        <section className="px-8 py-12">
+        <section id="brands" className="px-8 py-12">
           <div className="max-w-7xl mx-auto">
             <BrowseByBrand />
           </div>

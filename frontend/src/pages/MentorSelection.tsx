@@ -1,44 +1,20 @@
 import { Link } from 'react-router-dom';
 
 export default function MentorSelection() {
-  const mentors = [
-    {
-      id: 'sarah-chen',
-      name: 'Dr. Sarah Chen',
-      initials: 'DSC',
-      expertise: 'Expert in automotive technology and sustainable transportation solutions',
-      rating: 4.9,
-      clients: '150+',
-      experience: '5+',
-      hourlyRate: 200,
-      avatar: '/api/placeholder/60/60'
-    },
-    {
-      id: 'michael-rodriguez',
-      name: 'Prof. Michael Rodriguez',
-      initials: 'MR',
-      expertise: 'Specializes in electric vehicles and automotive engineering innovations',
-      rating: 4.8,
-      clients: '120+',
-      experience: '8+',
-      hourlyRate: 180,
-      avatar: '/api/placeholder/60/60'
-    },
-    {
-      id: 'emily-watson',
-      name: 'Dr. Emily Watson',
-      initials: 'EW',
-      expertise: 'Car buying consultant with 15+ years of industry experience',
-      rating: 4.7,
-      clients: '200+',
-      experience: '15+',
-      hourlyRate: 150,
-      avatar: '/api/placeholder/60/60'
-    }
-  ];
+  const mentor = {
+    id: 'sarah-chen',
+    name: 'Dr. Sarah Chen',
+    initials: 'DSC',
+    expertise: 'Expert in automotive technology and sustainable transportation solutions',
+    rating: 4.9,
+    clients: '150+',
+    experience: '5+',
+    hourlyRate: 200,
+    avatar: '/api/placeholder/60/60'
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Side - Profile Card */}
@@ -79,12 +55,11 @@ export default function MentorSelection() {
 
           {/* Right Side - Available Mentors */}
           <div className="bg-white rounded-2xl shadow-sm p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Available Mentors</h2>
-            <p className="text-gray-500 mb-8">Choose a mentor to guide you through your car buying journey</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Your Mentor</h2>
+            <p className="text-gray-500 mb-8">Meet your dedicated mentor to guide you through your car buying journey</p>
             
             <div className="space-y-6">
-              {mentors.map((mentor) => (
-                <div key={mentor.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                <div className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       {/* Mentor Avatar */}
@@ -135,7 +110,6 @@ export default function MentorSelection() {
                     </Link>
                   </div>
                 </div>
-              ))}
             </div>
           </div>
         </div>
