@@ -5,6 +5,156 @@ const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
 };
 
+// Dealer Auth API
+export const dealerAuthApi = {
+  register: async (payload: { name: string; email: string; password: string; phone?: string }) => {
+    const res = await fetch(`${API_BASE_URL}/auth/dealer/register`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || data.error?.message || 'Dealer registration failed');
+    }
+    return data as { token: string; refreshToken: string; dealer: any };
+  },
+  login: async (payload: { email: string; password: string }) => {
+    const res = await fetch(`${API_BASE_URL}/auth/dealer/login`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // bubble structured backend errors
+      const code = data.error || data.code;
+      const msg = data.message || data.error?.message || 'Dealer login failed';
+      const err = new Error(msg) as any; err.code = code; throw err;
+    }
+    return data as { token: string; refreshToken: string; dealer: any };
+  },
+  refresh: async (refreshToken: string) => {
+    const res = await fetch(`${API_BASE_URL}/auth/dealer/refresh`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ refreshToken }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to refresh token');
+    return data as { token: string; refreshToken: string; dealer: any };
+  },
+  logout: async (refreshToken?: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/dealer/logout`, {
+        method: 'POST',
+        headers: buildHeaders(),
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {}
+  }
+};
+
+// Dealer Domain API
+export const dealerApi = {
+  list: async (params?: { q?: string; page?: number; limit?: number }) => {
+    const usp = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+    const res = await fetch(`${API_BASE_URL}/dealers${usp.toString() ? `?${usp.toString()}` : ''}`);
+    if (!res.ok) throw new Error('Failed to fetch dealers');
+    return res.json();
+  },
+  get: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/dealers/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch dealer');
+    return res.json();
+  },
+  update: async (id: string, data: any) => {
+    const res = await fetch(`${API_BASE_URL}/dealers/${id}`, {
+      method: 'PUT',
+      headers: buildHeaders(true),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update dealer');
+    return res.json();
+  },
+  inventory: {
+    list: async (dealerId: string, params?: { page?: number; limit?: number; status?: string }) => {
+      const usp = new URLSearchParams();
+      if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/inventory${usp.toString() ? `?${usp.toString()}` : ''}`);
+      if (!res.ok) throw new Error('Failed to fetch inventory');
+      return res.json();
+    },
+    create: async (dealerId: string, payload: any) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/inventory`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to create inventory');
+      return res.json();
+    },
+    get: async (dealerId: string, invId: string) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/inventory/${invId}`);
+      if (!res.ok) throw new Error('Failed to fetch inventory item');
+      return res.json();
+    },
+    update: async (dealerId: string, invId: string, payload: any) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/inventory/${invId}`, {
+        method: 'PUT',
+        headers: buildHeaders(true),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to update inventory');
+      return res.json();
+    },
+    remove: async (dealerId: string, invId: string) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/inventory/${invId}`, {
+        method: 'DELETE',
+        headers: buildHeaders(true),
+      });
+      if (!res.ok) throw new Error('Failed to delete inventory');
+      return res.json();
+    },
+  },
+  bookings: {
+    list: async (dealerId: string, params?: { page?: number; limit?: number; status?: string }) => {
+      const usp = new URLSearchParams();
+      if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/bookings${usp.toString() ? `?${usp.toString()}` : ''}`, {
+        headers: buildHeaders(true),
+      });
+      if (!res.ok) throw new Error('Failed to fetch bookings');
+      return res.json();
+    },
+    create: async (dealerId: string, payload: any) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/bookings`, {
+        method: 'POST',
+        headers: buildHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to create booking');
+      return res.json();
+    },
+    update: async (dealerId: string, bookingId: string, payload: any) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: buildHeaders(true),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to update booking');
+      return res.json();
+    },
+    get: async (dealerId: string, bookingId: string) => {
+      const res = await fetch(`${API_BASE_URL}/dealers/${dealerId}/bookings/${bookingId}`, {
+        headers: buildHeaders(true),
+      });
+      if (!res.ok) throw new Error('Failed to fetch booking');
+      return res.json();
+    },
+  }
+};
 // Helper function to build headers
 const buildHeaders = (includeAuth: boolean = false): HeadersInit => {
   const headers: HeadersInit = {
@@ -107,7 +257,7 @@ export const carsApi = {
 // Auth API
 export const authApi = {
   // Google sign-in
-  googleSignIn: async (payload: { idToken?: string; email?: string; googleId?: string; name?: string }) => {
+  googleSignIn: async (payload: { idToken?: string; email?: string; googleId?: string; name?: string; role?: 'client' | 'dealer' | 'service_provider' | 'mentor' }) => {
     const response = await fetch(`${API_BASE_URL}/auth/google`, {
       method: 'POST',
       headers: buildHeaders(),
@@ -121,6 +271,8 @@ export const authApi = {
     if (data.token) {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('isAuthenticated', 'true');
+      try { window.dispatchEvent(new Event('auth-changed')); } catch {}
     }
     return data;
   },
@@ -140,11 +292,11 @@ export const authApi = {
   },
 
   // Verify OTP
-  verifyOtp: async (phone: string, otp: string) => {
+  verifyOtp: async (phone: string, otp: string, role?: 'client' | 'dealer' | 'service_provider' | 'mentor') => {
     const response = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
       method: 'POST',
       headers: buildHeaders(),
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify({ phone, otp, role }),
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -154,6 +306,8 @@ export const authApi = {
     if (data.token) {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('isAuthenticated', 'true');
+      try { window.dispatchEvent(new Event('auth-changed')); } catch {}
     }
     return data;
   },
@@ -238,6 +392,8 @@ export const authApi = {
   logout: () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+    try { window.dispatchEvent(new Event('auth-changed')); } catch {}
   },
 
   // Get stored user
@@ -320,5 +476,7 @@ export const testDriveApi = {
 export default {
   cars: carsApi,
   auth: authApi,
+  dealerAuth: dealerAuthApi,
+  dealer: dealerApi,
   testDrive: testDriveApi,
 };

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TestDriveCar {
   id: string;
@@ -12,6 +12,24 @@ interface TestDriveCar {
 export default function Profile() {
   const [testDriveCars, setTestDriveCars] = useState<TestDriveCar[]>([]);
   const [showAddCar, setShowAddCar] = useState(false);
+  const [userName, setUserName] = useState('Guest');
+  const [userEmail, setUserEmail] = useState('');
+  const [userProfilePic, setUserProfilePic] = useState('');
+
+  useEffect(() => {
+    // Load user data from localStorage
+    const name = localStorage.getItem('userName') || 'Guest';
+    const email = localStorage.getItem('userEmail') || '';
+    const profilePic = localStorage.getItem('userProfilePic') || '';
+
+    setUserName(name);
+    setUserEmail(email);
+    setUserProfilePic(profilePic);
+  }, []);
+
+  const getUserInitials = () => {
+    return userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   const availableCars: TestDriveCar[] = [
     { id: '1', name: 'Supra GR', brand: 'Toyota', price: 450, image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&h=300&fit=crop' },
@@ -34,7 +52,7 @@ export default function Profile() {
   const calculateTotal = () => {
     const basePrice = 450;
     const totalCars = testDriveCars.length;
-    
+
     if (totalCars >= 3) {
       // Package discount: ₹399 per car
       const discountedPrice = 399;
@@ -115,7 +133,7 @@ export default function Profile() {
   ];
 
   return (
-  <div className="min-h-screen bg-gray-50 py-8 pt-24">
+    <div className="min-h-screen bg-gray-50 py-8 pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Side - Profile Card */}
@@ -123,30 +141,40 @@ export default function Profile() {
             <div className="text-center">
               {/* Profile Avatar */}
               <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-semibold text-gray-600">
-                  JD
-                </div>
+                {userProfilePic ? (
+                  <img
+                    src={userProfilePic}
+                    alt={userName}
+                    className="w-24 h-24 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-semibold text-white">
+                    {getUserInitials()}
+                  </div>
+                )}
                 <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-white"></div>
               </div>
-              
+
               {/* Profile Info */}
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">John Doe</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{userName}</h1>
               <p className="text-gray-500 mb-6">Welcome back to Known</p>
-              
+
               {/* Contact Info */}
-              <div className="flex items-center justify-center text-gray-600 mb-8">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                john.doe@gmail.com
-              </div>
+              {userEmail && (
+                <div className="flex items-center justify-center text-gray-600 mb-8">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  {userEmail}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right Side - Quick Actions */}
           <div className="bg-white rounded-2xl shadow-sm p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-            
+
             <div className="space-y-4">
               {quickActions.map((action) => (
                 <Link
@@ -165,10 +193,10 @@ export default function Profile() {
                       <p className="text-sm text-gray-500">{action.description}</p>
                     </div>
                   </div>
-                  <svg 
-                    className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -236,7 +264,7 @@ export default function Profile() {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
                     <span>Cars selected:</span>
@@ -253,14 +281,14 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total Amount:</span>
                     <span className="text-blue-600">₹{pricing.totalAmount}</span>
                   </div>
                 </div>
-                
+
                 {testDriveCars.length > 0 && (
                   <button className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
                     Proceed to Payment
@@ -285,7 +313,7 @@ export default function Profile() {
                     </svg>
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {availableCars.filter(car => !testDriveCars.find(c => c.id === car.id)).map((car) => (
                     <div key={car.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -301,7 +329,7 @@ export default function Profile() {
                     </div>
                   ))}
                 </div>
-                
+
                 {availableCars.filter(car => !testDriveCars.find(c => c.id === car.id)).length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-gray-500">All available cars have been added to your test drive list.</p>

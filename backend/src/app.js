@@ -3,32 +3,26 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
-const { connectDB, mongoHealth } = require('./db');
-const carsRouter = require('./routes/cars');
-const testdriveRouter = require('./routes/testdrive');
-const authRouter = require('./routes/auth');
+const { mongoHealth } = require('./config/db');
+const apiRouter = require('./routes/index');
+const { CORS_ORIGIN } = require('./config/env');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
-app.use(helmet());
 const corsOptions =
   CORS_ORIGIN === '*'
     ? { origin: '*', credentials: false }
     : { origin: CORS_ORIGIN.split(',').map((s) => s.trim()), credentials: true };
+
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
-app.use('/api/cars', carsRouter);
-app.use('/api/testdrive', testdriveRouter);
-app.use('/api/auth', authRouter);
+app.use('/api', apiRouter);
 
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -40,7 +34,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('server is running!');
+  res.send('structured server is running!');
 });
 
 app.use((req, res, next) => {
@@ -58,14 +52,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-;(async () => {
-  try {
-    await connectDB(process.env.MONGODB_URI);
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-})();
+module.exports = app;

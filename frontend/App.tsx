@@ -25,6 +25,9 @@ import DealerPage from "./src/pages/DealerPage";
 import MentorPage from "./src/pages/MentorPage";
 import ServiceProviderPage from "./src/pages/ServiceProviderPage";
 import { ProfileSetup } from "./src/pages/ProfileSetup";
+import DealerLogin from "./src/pages/dealer/Login";
+import DealerSignup from "./src/pages/dealer/Signup";
+import DealerDashboard from "./src/pages/dealer/Dashboard";
 
 export default function App() {
   return (
@@ -32,39 +35,45 @@ export default function App() {
       <Routes>
         {/* Startup Screen Route */}
         <Route path="/startup" element={<StartupScreen />} />
-        
+
         {/* Main App Routes with Header and Footer */}
         <Route path="/*" element={
           <>
             <ScrollToTop />
             <Header />
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/auth" element={<AuthLanding />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/profile-setup" element={<ProfileSetup />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/mentor-profile" element={<MentorProfile />} />
-              <Route path="/mentor-selection" element={<MentorSelection />} />
-              <Route path="/mentor-detail/:mentorId" element={<MentorDetail />} />
-              <Route path="/mentor-chat/:mentorId" element={<MentorChat />} />
-              <Route path="/car/:carId" element={<CarDetail />} />
-              <Route path="/custom-match" element={<CustomMatch />} />
-              <Route path="/service-dashboard" element={<ServiceDashboard />} />
-              {/* New raw pages */}
-              <Route path="/dealer" element={<DealerPage />} />
-              <Route path="/mentor" element={<MentorPage />} />
-              <Route path="/service-provider" element={<ServiceProviderPage />} />
-              {/* Bargein Arena Routes */}
-              <Route path="/bargein" element={<BargeinLanding />} />
-              <Route path="/bargein/consent" element={<BargeinConsent />} />
-              <Route path="/bargein/token-success/:tokenId" element={<BargeinTokenSuccess />} />
-              <Route path="/bargein/select-car" element={<BargeinSelectCar />} />
-              <Route path="/bargein/arena/:arenaId" element={<BargeinArenaRoom />} />
-              {/* Loan Arena Route */}
-              <Route path="/loan-arena/:arenaId" element={<LoanArenaRoom />} />
-            </Routes>
+            {/* Global spacer to avoid content under the fixed Header */}
+            <main className="pt-20 md:pt-24">
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/auth" element={<AuthLanding />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/profile-setup" element={<ProfileSetup />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/mentor-profile" element={<MentorProfile />} />
+                <Route path="/mentor-selection" element={<MentorSelection />} />
+                <Route path="/mentor-detail/:mentorId" element={<MentorDetail />} />
+                <Route path="/mentor-chat/:mentorId" element={<MentorChat />} />
+                <Route path="/car/:carId" element={<CarDetail />} />
+                <Route path="/custom-match" element={<CustomMatch />} />
+                <Route path="/service-dashboard" element={<ServiceDashboard />} />
+                {/* New raw pages */}
+                <Route path="/dealer" element={<DealerPage />} />
+                <Route path="/dealer/login" element={<DealerLogin />} />
+                <Route path="/dealer/signup" element={<DealerSignup />} />
+                <Route path="/dealer/dashboard" element={<DealerDashboard />} />
+                <Route path="/mentor" element={<MentorPage />} />
+                <Route path="/service-provider" element={<ServiceProviderPage />} />
+                {/* Bargein Arena Routes */}
+                <Route path="/bargein" element={<BargeinLanding />} />
+                <Route path="/bargein/consent" element={<BargeinConsent />} />
+                <Route path="/bargein/token-success/:tokenId" element={<BargeinTokenSuccess />} />
+                <Route path="/bargein/select-car" element={<BargeinSelectCar />} />
+                <Route path="/bargein/arena/:arenaId" element={<BargeinArenaRoom />} />
+                {/* Loan Arena Route */}
+                <Route path="/loan-arena/:arenaId" element={<LoanArenaRoom />} />
+              </Routes>
+            </main>
             <Footer />
           </>
         } />

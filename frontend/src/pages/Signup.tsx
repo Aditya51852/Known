@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 
 const Signup = () => {
@@ -13,6 +13,13 @@ const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const role = searchParams.get('role') || 'client';
+
+  // Redirect dealers to dedicated dealer signup page
+  useEffect(() => {
+    if (role === 'dealer') {
+      navigate('/dealer/signup', { replace: true });
+    }
+  }, [role, navigate]);
 
   const roleContent = {
     client: {

@@ -8,8 +8,8 @@ const BargeinLanding: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      // Redirect unauthenticated users to auth, with return path
-      navigate(`/auth?from=${encodeURIComponent(location.pathname)}`);
+      // Redirect unauthenticated users to login, with return path
+      navigate(`/login?from=${encodeURIComponent(location.pathname)}`);
     }
   }, [isAuthenticated, navigate, location.pathname]);
 

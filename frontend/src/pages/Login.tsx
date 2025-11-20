@@ -1,4 +1,4 @@
- import { Link, useNavigate } from "react-router-dom";
+ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { authApi } from '../services/api';
 
@@ -15,20 +15,28 @@ const Login = () => {
   ];
 
   const navigate = useNavigate();
+  const [sp] = useSearchParams();
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [role, setRole] = useState<'client' | 'dealer' | 'service_provider' | 'mentor'>('client');
 
   const heroImage = useMemo(() => images[Math.floor(Math.random() * images.length)], []);
 
   useEffect(() => {
+    // If this page is reached with role=dealer, redirect to dedicated dealer login
+    const r = sp.get('role');
+    if (r === 'dealer') {
+      navigate('/dealer/login', { replace: true });
+      return;
+    }
     if (showOtp) {
       const el = document.getElementById("otp-0") as HTMLInputElement | null;
       el?.focus();
     }
-  }, [showOtp]);
+  }, [showOtp, sp, navigate]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -40,6 +48,7 @@ const Login = () => {
         email: `user${Math.floor(Math.random()*100000)}@example.com`,
         googleId: `dev-${Date.now()}`,
         name: undefined as unknown as string,
+        role,
       };
       const result = await authApi.googleSignIn(devPayload);
       window.dispatchEvent(new Event('auth-changed'));
@@ -75,7 +84,7 @@ const Login = () => {
     try {
       setLoading(true);
       const code = otp.join("");
-      const result = await authApi.verifyOtp(mobileNumber, code);
+      const result = await authApi.verifyOtp(mobileNumber, code, role);
       window.dispatchEvent(new Event('auth-changed'));
       if (result.user?.profileComplete) {
         navigate("/profile");
@@ -124,6 +133,26 @@ const Login = () => {
             <div className="text-center mb-6">
               <h2 className="text-2xl font-semibold">Welcome to Known</h2>
               <p className="text-gray-400">Login with Google or Mobile OTP</p>
+            </div>
+
+            {/* Role Selection */}
+            <div className="mb-5 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setRole('client')}
+                className={`h-10 rounded-lg text-sm font-medium ${role === 'client' ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              >Client</button>
+              <button
+                onClick={() => navigate('/dealer/login')}
+                className={`h-10 rounded-lg text-sm font-medium ${role === 'dealer' ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              >Dealer</button>
+              <button
+                onClick={() => setRole('service_provider')}
+                className={`h-10 rounded-lg text-sm font-medium ${role === 'service_provider' ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              >Service Provider</button>
+              <button
+                onClick={() => setRole('mentor')}
+                className={`h-10 rounded-lg text-sm font-medium ${role === 'mentor' ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              >Mentor</button>
             </div>
 
             {/* Quick Client Login */}

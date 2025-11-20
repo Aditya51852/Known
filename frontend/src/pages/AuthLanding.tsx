@@ -121,14 +121,14 @@ export const AuthLanding: React.FC = () => {
               {/* Traditional Auth Options */}
               <div className="space-y-3">
                 <Link
-                  to={`/login?role=${selectedRole}`}
+                  to={selectedRole === 'dealer' ? '/dealer/login' : `/login?role=${selectedRole}`}
                   className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                 >
                   Login with Email
                 </Link>
                 
                 <Link
-                  to={`/signup?role=${selectedRole}`}
+                  to={selectedRole === 'dealer' ? '/dealer/signup' : `/signup?role=${selectedRole}`}
                   className="block w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
                 >
                   Create Account
