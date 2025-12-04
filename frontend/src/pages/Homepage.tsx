@@ -8,15 +8,15 @@ import { CarGrid } from '../components/CarGrid';
 import { Compare } from '../components/Compare';
 import { NewsAndBrowse } from '../components/NewsAndBrowse';
 import { BrowseByBrand } from '../components/BrowseByBrand';
-import { 
-  Shield, 
-  Users, 
-  Handshake, 
-  Car as CarIcon, 
-  TrendingUp, 
-  ArrowRight, 
-  Zap, 
-  Target, 
+import {
+  Shield,
+  Users,
+  Handshake,
+  Car as CarIcon,
+  TrendingUp,
+  ArrowRight,
+  Zap,
+  Target,
   Star
 } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export const Homepage: React.FC = () => {
 
     document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
-    
+
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.removeEventListener("mousedown", handleClickOutside);
@@ -74,7 +74,16 @@ export const Homepage: React.FC = () => {
       <main>
         {/* Hero Section - Gradient + Motion + Search overlay */}
         <section className="relative min-h-[78vh] flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 hero-gradient" />
+          <div
+            className="absolute inset-0 bg-cover bg-right-center"
+            style={{
+              backgroundImage: 'url(/porsche-hero-bg.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'right center',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-black/10" />
 
           {/* Decorative rings */}
           <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -95,26 +104,29 @@ export const Homepage: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-full text-sm"
+                className="inline-flex items-center gap-2 bg-white/90 text-gray-900 border border-gray-300 px-4 py-2 rounded-full text-sm font-medium shadow-lg"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
               >
                 <Zap className="w-4 h-4" />
                 Revolutionary Car Buying Experience
               </motion.div>
 
               <motion.h1
-                className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-tight"
+                className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-tight text-white"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
+                style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.2)' }}
               >
-                Find Your Perfect <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">Car</span>
+                Find Your Perfect <span className="text-yellow-400">Car</span>
               </motion.h1>
 
               <motion.p
-                className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+                className="text-lg md:text-2xl text-white max-w-3xl mx-auto leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
               >
                 Search thousands of cars with our intelligent matching system
               </motion.p>
@@ -146,8 +158,8 @@ export const Homepage: React.FC = () => {
                     { number: '4.9★', label: 'User Rating' }
                   ].map((stat, i) => (
                     <div key={i} className="text-center">
-                      <div className="text-2xl md:text-3xl font-medium text-primary mb-1">{stat.number}</div>
-                      <div className="text-sm text-muted-foreground">{stat.label}</div>
+                      <div className="text-2xl md:text-3xl font-medium text-yellow-400 mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stat.number}</div>
+                      <div className="text-sm text-white" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{stat.label}</div>
                     </div>
                   ))}
                 </div>

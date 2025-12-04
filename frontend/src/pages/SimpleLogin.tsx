@@ -1,5 +1,6 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useMemo } from "react";
+import { PhoneOtpLogin } from "../components/PhoneOtpLogin";
 
 const SimpleLogin = () => {
     const images = [
@@ -170,13 +171,26 @@ const SimpleLogin = () => {
                                 type="submit"
                                 disabled={loading}
                                 className={`w-full h-12 rounded-full font-medium transition shadow-[inset_0_-2px_0_rgba(255,255,255,0.1)] ${!loading
-                                        ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white'
-                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                    ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white'
+                                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                     }`}
                             >
                                 {loading ? 'Logging in...' : 'Continue'}
                             </button>
                         </form>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-3 my-6">
+                            <div className="flex-1 h-px bg-white/10" />
+                            <span className="text-sm text-gray-400">or</span>
+                            <div className="flex-1 h-px bg-white/10" />
+                        </div>
+
+                        {/* Phone OTP Login Section */}
+                        <div>
+                            <h3 className="text-lg font-semibold text-white mb-4">Login with Phone (OTP)</h3>
+                            <PhoneOtpLogin />
+                        </div>
 
                         {/* Footer */}
                         <div className="text-center mt-8 text-sm text-gray-400">

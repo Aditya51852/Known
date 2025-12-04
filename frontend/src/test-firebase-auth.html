@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Phone Auth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #333;
+            color: #fff;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background: #0ea5e9;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0284c7;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+        #recaptcha-container { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Phone Auth Test</h1>
+        <p>Use this page to test Firebase phone authentication independently</p>
+        
+        <div id="recaptcha-container"></div>
+        
+        <div id="phone-section">
+            <input type="tel" id="phoneNumber" placeholder="Enter 10-digit phone number" maxlength="10">
+            <button onclick="sendOTP()">Send OTP</button>
+        </div>
+        
+        <div id="otp-section" style="display: none;">
+            <input type="text" id="otpCode" placeholder="Enter 6-digit OTP" maxlength="6">
+            <button onclick="verifyOTP()">Verify OTP</button>
+            <button onclick="reset()">Try Different Number</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 5px;">
+            <h3>📋 Quick Checklist:</h3>
+            <ul style="line-height: 1.8;">
+                <li>✅ Phone authentication enabled in Firebase Console?</li>
+                <li>✅ Authorized domains include localhost?</li>
+                <li>✅ SMS quota not exceeded?</li>
+                <li>✅ Test number: +911234567890 (code: 123456)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js';
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZy5MoK06Lv2KqfihKrckhWsO7dfIi9MM",
+            authDomain: "known-9851c.firebaseapp.com",
+            projectId: "known-9851c",
+            storageBucket: "known-9851c.firebasestorage.app",
+            messagingSenderId: "436301690706",
+            appId: "1:436301690706:web:6eef11e763c224f2d76c8b",
+            measurementId: "G-ML69VX9PGR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        let recaptchaVerifier;
+        let confirmationResult;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="${type}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
+        }
+
+        function initRecaptcha() {
+            try {
+                log('Initializing reCAPTCHA...', 'info');
+                recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    size: 'invisible',
+                    callback: () => {
+                        log('✅ reCAPTCHA solved successfully', 'success');
+                    },
+                    'expired-callback': () => {
+                        log('❌ reCAPTCHA expired', 'error');
+                    }
+                });
+                log('✅ RecaptchaVerifier initialized', 'success');
+            } catch (error) {
+                log(`❌ Error initializing reCAPTCHA: ${error.message}`, 'error');
+            }
+        }
+
+        window.sendOTP = async function() {
+            const phoneInput = document.getElementById('phoneNumber');
+            const phoneNumber = phoneInput.value.trim();
+
+            if (phoneNumber.length !== 10) {
+                log('❌ Please enter a valid 10-digit phone number', 'error');
+                return;
+            }
+
+            const fullPhoneNumber = `+91${phoneNumber}`;
+            log(`📱 Attempting to send OTP to: ${fullPhoneNumber}`, 'info');
+
+            try {
+                if (!recaptchaVerifier) {
+                    initRecaptcha();
+                }
+
+                log('🔄 Calling signInWithPhoneNumber...', 'info');
+                confirmationResult = await signInWithPhoneNumber(auth, fullPhoneNumber, recaptchaVerifier);
+                
+                log('✅ OTP sent successfully!', 'success');
+                log('📬 Check your phone for the OTP', 'success');
+                
+                document.getElementById('phone-section').style.display = 'none';
+                document.getElementById('otp-section').style.display = 'block';
+            } catch (error) {
+                log(`❌ Error: ${error.code}`, 'error');
+                log(`❌ Message: ${error.message}`, 'error');
+                
+                if (error.code === 'auth/operation-not-allowed') {
+                    log('⚠️ CRITICAL: Phone authentication is NOT ENABLED in Firebase Console!', 'warning');
+                    log('👉 Go to Firebase Console → Authentication → Sign-in method → Enable Phone', 'warning');
+                } else if (error.code === 'auth/quota-exceeded') {
+                    log('⚠️ SMS quota exceeded. Upgrade to Blaze plan or wait 24 hours', 'warning');
+                } else if (error.code === 'auth/too-many-requests') {
+                    log('⚠️ Too many requests. Try again in 1 hour or use test number', 'warning');
+                }
+
+                // Reset recaptcha
+                if (recaptchaVerifier) {
+                    recaptchaVerifier.clear();
+                    recaptchaVerifier = null;
+                    initRecaptcha();
+                }
+            }
+        };
+
+        window.verifyOTP = async function() {
+            const otpInput = document.getElementById('otpCode');
+            const otp = otpInput.value.trim();
+
+            if (otp.length !== 6) {
+                log('❌ Please enter a valid 6-digit OTP', 'error');
+                return;
+            }
+
+            try {
+                log('🔄 Verifying OTP...', 'info');
+                const result = await confirmationResult.confirm(otp);
+                log('✅ OTP verified successfully!', 'success');
+                log(`✅ User authenticated: ${result.user.phoneNumber}`, 'success');
+                log('🎉 Authentication successful!', 'success');
+            } catch (error) {
+                log(`❌ Error: ${error.code}`, 'error');
+                log(`❌ Message: ${error.message}`, 'error');
+                
+                if (error.code === 'auth/invalid-verification-code') {
+                    log('⚠️ Invalid OTP. Please check and try again', 'warning');
+                } else if (error.code === 'auth/code-expired') {
+                    log('⚠️ OTP expired. Please request a new one', 'warning');
+                }
+            }
+        };
+
+        window.reset = function() {
+            document.getElementById('phone-section').style.display = 'block';
+            document.getElementById('otp-section').style.display = 'none';
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('otpCode').value = '';
+            log('🔄 Reset. Try with a different number', 'info');
+        };
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('🚀 Firebase Phone Auth Test Page Loaded', 'success');
+            log('📋 Firebase Project: known-9851c', 'info');
+            initRecaptcha();
+        });
+    </script>
+</body>
+</html>

@@ -216,10 +216,32 @@ html {
 
 @layer utilities {
   /* Gradient backdrop for hero */
-  .hero-gradient {
-    background: radial-gradient(1200px 600px at 50% 0%, rgba(3,2,19,0.25), transparent),
-                linear-gradient(180deg, rgba(3,2,19,0.75) 0%, rgba(3,2,19,0.6) 40%, rgba(3,2,19,0.4) 100%);
-  }
+.hero-section {
+  width: 100%;
+  height: 100vh; /* Full screen height */
+  background-image: url("https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1920&q=80");
+  background-size: cover;       /* Ensures full coverage */
+  background-position: center;  /* Centers the car nicely */
+  background-repeat: no-repeat; /* No repeating */
+  background-attachment: fixed; /* Parallax-style effect (optional) */
+}
+
+/* Optional overlay to keep text readable */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45); /* Dark layer so text stays visible */
+  backdrop-filter: blur(2px);   /* Softens the background */
+  z-index: 1;
+}
+
+.hero-section * {
+  position: relative;
+  z-index: 2; /* Text remains above overlay */
+  color: white; /* Recommended text color */
+}
+
 
   /* Primary action gradient */
   .primary-gradient {

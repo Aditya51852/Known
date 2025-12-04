@@ -25,6 +25,7 @@ import DealerPage from "./src/pages/DealerPage";
 import MentorPage from "./src/pages/MentorPage";
 import ServiceProviderPage from "./src/pages/ServiceProviderPage";
 import { ProfileSetup } from "./src/pages/ProfileSetup";
+import SimpleLogin from "./src/pages/SimpleLogin";
 import DealerLogin from "./src/pages/dealer/Login";
 import DealerSignup from "./src/pages/dealer/Signup";
 import DealerDashboard from "./src/pages/dealer/Dashboard";
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="/" element={<Homepage />} />
                 <Route path="/auth" element={<AuthLanding />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/simple-login" element={<SimpleLogin />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/profile-setup" element={<ProfileSetup />} />
                 <Route path="/profile" element={<Profile />} />
