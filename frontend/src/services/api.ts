@@ -257,7 +257,7 @@ export const carsApi = {
 // Auth API
 export const authApi = {
   // Google sign-in
-  googleSignIn: async (payload: { idToken?: string; email?: string; googleId?: string; name?: string; role?: 'client' | 'dealer' | 'service_provider' | 'mentor' }) => {
+  googleSignIn: async (payload: { token?: string; idToken?: string; email?: string; googleId?: string; name?: string; role?: 'client' | 'dealer' | 'service_provider' | 'mentor' }) => {
     const response = await fetch(`${API_BASE_URL}/auth/google`, {
       method: 'POST',
       headers: buildHeaders(),
