@@ -473,10 +473,389 @@ export const testDriveApi = {
   },
 };
 
+// ──────────────────────────────────────────────
+// Bargain Arena API
+// ──────────────────────────────────────────────
+export const bargainApi = {
+  // Client: Show interest and create arena
+  showInterest: async (carId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/interest`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ carId }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Failed to create arena');
+    }
+    return response.json();
+  },
+
+  // Client: List my bargain sessions
+  getSessions: async () => {
+    const response = await fetch(`${API_BASE_URL}/bargain/sessions`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch sessions');
+    return response.json();
+  },
+
+  // Client: View arena room (anonymous bulletins)
+  getArena: async (sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/arena/${sessionId}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch arena');
+    return response.json();
+  },
+
+  // Client: Lock a bulletin
+  lockOffer: async (sessionId: string, anonymousTokenId: string, tokenPaymentAmount: number = 5000) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/lock`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ sessionId, anonymousTokenId, tokenPaymentAmount }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Failed to lock offer');
+    }
+    return response.json();
+  },
+
+  // Client: Cancel session
+  cancelSession: async (sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/cancel/${sessionId}`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to cancel session');
+    return response.json();
+  },
+
+  // Dealer: Get open arenas
+  getOpenArenas: async () => {
+    const response = await fetch(`${API_BASE_URL}/bargain/dealer/open-arenas`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch open arenas');
+    return response.json();
+  },
+
+  // Dealer: Submit bulletin
+  submitBulletin: async (data: {
+    sessionId: string;
+    offeredPrice: number;
+    priceBreakdown?: any;
+    offers?: string[];
+    discounts?: string[];
+    financingOptions?: any;
+    estimatedDeliveryDays?: number;
+    freeAccessories?: string[];
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/bulletin`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Failed to submit bulletin');
+    }
+    return response.json();
+  },
+
+  // Dealer: Get my bulletin for a session
+  getMyBulletin: async (sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/bargain/dealer/bulletin/${sessionId}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch bulletin');
+    return response.json();
+  },
+};
+
+// ──────────────────────────────────────────────
+// Mentors API
+// ──────────────────────────────────────────────
+export const mentorsApi = {
+  // List mentors
+  list: async (params?: { specialization?: string; minRating?: number; page?: number; limit?: number }) => {
+    const usp = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+    const response = await fetch(`${API_BASE_URL}/mentors${usp.toString() ? `?${usp}` : ''}`);
+    if (!response.ok) throw new Error('Failed to fetch mentors');
+    return response.json();
+  },
+
+  // Get mentor profile with reviews
+  getProfile: async (mentorId: string) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/${mentorId}`);
+    if (!response.ok) throw new Error('Failed to fetch mentor');
+    return response.json();
+  },
+
+  // Request consultation
+  requestConsultation: async (mentorId: string, data: { carId?: string; scheduledAt?: string; clientMessage?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/${mentorId}/consult`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || 'Failed to request consultation');
+    }
+    return response.json();
+  },
+
+  // Get my consultations (client)
+  getMyConsultations: async () => {
+    const response = await fetch(`${API_BASE_URL}/mentors/consultations/mine`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch consultations');
+    return response.json();
+  },
+
+  // Get assigned consultations (mentor)
+  getAssignedConsultations: async () => {
+    const response = await fetch(`${API_BASE_URL}/mentors/consultations/assigned`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch assigned consultations');
+    return response.json();
+  },
+
+  // Update consultation status (mentor)
+  updateConsultationStatus: async (consultationId: string, status: string, notes?: string) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/consultations/${consultationId}/status`, {
+      method: 'PATCH',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ status, notes }),
+    });
+    if (!response.ok) throw new Error('Failed to update consultation');
+    return response.json();
+  },
+
+  // Send chat message
+  sendMessage: async (consultationId: string, message: string) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/chat/${consultationId}`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok) throw new Error('Failed to send message');
+    return response.json();
+  },
+
+  // Get chat messages
+  getMessages: async (consultationId: string) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/chat/${consultationId}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch messages');
+    return response.json();
+  },
+
+  // Submit review for mentor
+  submitReview: async (mentorId: string, data: { rating: number; title?: string; comment?: string; consultationId?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/mentors/${mentorId}/review`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to submit review');
+    return response.json();
+  },
+};
+
+// ──────────────────────────────────────────────
+// Notifications API
+// ──────────────────────────────────────────────
+export const notificationsApi = {
+  // Get notifications
+  getAll: async (params?: { page?: number; limit?: number; unreadOnly?: boolean }) => {
+    const usp = new URLSearchParams();
+    if (params) {
+      if (params.page) usp.append('page', String(params.page));
+      if (params.limit) usp.append('limit', String(params.limit));
+      if (params.unreadOnly) usp.append('unreadOnly', 'true');
+    }
+    const response = await fetch(`${API_BASE_URL}/notifications${usp.toString() ? `?${usp}` : ''}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch notifications');
+    return response.json();
+  },
+
+  // Mark as read
+  markRead: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to mark as read');
+    return response.json();
+  },
+
+  // Mark all as read
+  markAllRead: async () => {
+    const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to mark all as read');
+    return response.json();
+  },
+
+  // Delete notification
+  remove: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+      method: 'DELETE',
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to delete notification');
+    return response.json();
+  },
+};
+
+// ──────────────────────────────────────────────
+// Wishlist API
+// ──────────────────────────────────────────────
+export const wishlistApi = {
+  // Get wishlist
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/wishlist`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch wishlist');
+    return response.json();
+  },
+
+  // Add to wishlist
+  add: async (carId: string) => {
+    const response = await fetch(`${API_BASE_URL}/wishlist`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ carId }),
+    });
+    if (!response.ok) throw new Error('Failed to add to wishlist');
+    return response.json();
+  },
+
+  // Remove from wishlist
+  remove: async (carId: string) => {
+    const response = await fetch(`${API_BASE_URL}/wishlist/${carId}`, {
+      method: 'DELETE',
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to remove from wishlist');
+    return response.json();
+  },
+
+  // Check if car is in wishlist
+  check: async (carId: string) => {
+    const response = await fetch(`${API_BASE_URL}/wishlist/check/${carId}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to check wishlist');
+    return response.json();
+  },
+};
+
+// ──────────────────────────────────────────────
+// Admin API
+// ──────────────────────────────────────────────
+export const adminApi = {
+  // Platform stats
+  getStats: async () => {
+    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch stats');
+    return response.json();
+  },
+
+  // List users
+  getUsers: async (params?: { role?: string; page?: number; limit?: number; q?: string }) => {
+    const usp = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+    const response = await fetch(`${API_BASE_URL}/admin/users${usp.toString() ? `?${usp}` : ''}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  },
+
+  // Update user role
+  updateUserRole: async (userId: string, role: string) => {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: buildHeaders(true),
+      body: JSON.stringify({ role }),
+    });
+    if (!response.ok) throw new Error('Failed to update role');
+    return response.json();
+  },
+
+  // List bargain sessions
+  getBargainSessions: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const usp = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+    const response = await fetch(`${API_BASE_URL}/admin/bargain-sessions${usp.toString() ? `?${usp}` : ''}`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch bargain sessions');
+    return response.json();
+  },
+
+  // Dealer dashboard stats
+  getDealerStats: async () => {
+    const response = await fetch(`${API_BASE_URL}/admin/dealer-stats`, {
+      headers: buildHeaders(true),
+    });
+    if (!response.ok) throw new Error('Failed to fetch dealer stats');
+    return response.json();
+  },
+};
+
+// ──────────────────────────────────────────────
+// Reviews API
+// ──────────────────────────────────────────────
+export const reviewsApi = {
+  // Get reviews for a target
+  getForTarget: async (targetId: string, targetModel: 'User' | 'Dealer' | 'Car', params?: { page?: number; limit?: number }) => {
+    const usp = new URLSearchParams({ targetId, targetModel });
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && usp.append(k, String(v)));
+    const response = await fetch(`${API_BASE_URL}/reviews?${usp}`);
+    if (!response.ok) throw new Error('Failed to fetch reviews');
+    return response.json();
+  },
+
+  // Submit review
+  submit: async (data: { targetId: string; targetModel: string; rating: number; title?: string; comment?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/reviews`, {
+      method: 'POST',
+      headers: buildHeaders(true),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to submit review');
+    return response.json();
+  },
+};
+
 export default {
   cars: carsApi,
   auth: authApi,
   dealerAuth: dealerAuthApi,
   dealer: dealerApi,
   testDrive: testDriveApi,
+  bargain: bargainApi,
+  mentors: mentorsApi,
+  notifications: notificationsApi,
+  wishlist: wishlistApi,
+  admin: adminApi,
+  reviews: reviewsApi,
 };
+
