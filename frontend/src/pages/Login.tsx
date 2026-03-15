@@ -1,6 +1,7 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { authApi } from '../services/api';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   // New Figma-aligned implementation
@@ -38,31 +39,32 @@ const Login = () => {
     }
   }, [showOtp, sp, navigate]);
 
-  const handleGoogleLogin = async () => {
-    try {
-      setError("");
-      setLoading(true);
-      // In production, pass idToken from Google SDK.
-      // Dev mode: backend accepts email + googleId when GOOGLE_OAUTH_DEV=true
-      const devPayload = {
-        email: `user${Math.floor(Math.random() * 100000)}@example.com`,
-        googleId: `dev-${Date.now()}`,
-        name: undefined as unknown as string,
-        role,
-      };
-      const result = await authApi.googleSignIn(devPayload);
-      window.dispatchEvent(new Event('auth-changed'));
-      if (result.user?.profileComplete) {
-        navigate("/profile");
-      } else {
-        navigate("/profile-setup");
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setError("");
+        setLoading(true);
+        const payload = {
+          token: tokenResponse.access_token, // @react-oauth/google useGoogleLogin implicit flow returns access_token
+          role,
+        };
+        const result = await authApi.googleSignIn(payload);
+        window.dispatchEvent(new Event('auth-changed'));
+        if (result.user?.profileComplete) {
+          navigate("/profile");
+        } else {
+          navigate("/profile-setup");
+        }
+      } catch (e: any) {
+        setError(e.message || 'Google sign-in failed');
+      } finally {
+        setLoading(false);
       }
-    } catch (e: any) {
-      setError(e.message || 'Google sign-in failed');
-    } finally {
-      setLoading(false);
+    },
+    onError: () => {
+      setError("Google login popup closed or failed");
     }
-  };
+  });
 
   const handleContinueWithMobile = async () => {
     try {
@@ -157,7 +159,7 @@ const Login = () => {
 
             {/* Quick Client Login */}
             <button
-              onClick={handleGoogleLogin}
+              onClick={() => handleGoogleLogin()}
               className="w-full h-12 flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-transform duration-200 active:scale-[0.99] shadow-[inset_0_-2px_0_rgba(255,255,255,0.1)]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

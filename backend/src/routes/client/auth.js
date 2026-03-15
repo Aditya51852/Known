@@ -82,34 +82,10 @@ router.post('/login', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Google sign-in (dev-friendly)
-router.post('/google', async (req, res, next) => {
-  try {
-    const devEnabled = String(process.env.GOOGLE_OAUTH_DEV || '').toLowerCase() === 'true';
-    const { idToken, email, googleId, name, role } = req.body || {};
-    if (!devEnabled && !idToken) {
-      return res.status(400).json({ error: { message: 'Google OAuth not configured' } });
-    }
-    if (!email && !googleId && !idToken) {
-      return res.status(400).json({ error: { message: 'Missing google credentials' } });
-    }
-    let user = await User.findOne({
-      $or: [
-        email ? { email } : null,
-        googleId ? { googleId } : null,
-      ].filter(Boolean)
-    });
-    if (!user) {
-      user = await User.create({ email, googleId, name, role: role || 'client' });
-    } else {
-      let changed = false;
-      if (googleId && !user.googleId) { user.googleId = googleId; changed = true; }
-      if (name && !user.name) { user.name = name; changed = true; }
-      if (changed) { await user.save(); }
-    }
-    return res.json(issueAuthResponse(user));
-  } catch (e) { next(e); }
-});
+const authController = require('../../controllers/authController');
+
+// Google sign-in
+router.post('/google', authController.googleLogin);
 
 // Login with OTP (simplified stub aligning to existing API)
 router.post('/login/otp', async (req, res, next) => {
