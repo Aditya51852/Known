@@ -1,15 +1,17 @@
-const app = require('./app');
-const { connectDB } = require('./config/db');
-const { PORT, MONGODB_URI } = require('./config/env');
+import dotenv from "dotenv";
+dotenv.config();
 
-(async () => {
-  try {
-    await connectDB(MONGODB_URI);
-    app.listen(PORT, () => {
-      console.log(`Structured server is running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-})();
+import express from "express"
+import cors from "cors"
+import authRouters from "./routes/auth.js"
+
+const port = 8080;
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+app.use("/api/auth", authRouters);
+
+app.listen(port, ()=>{
+  console.log("Listening...")
+})
